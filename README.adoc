@@ -1,0 +1,101 @@
+---
+tags: [java-sdk, repository]
+---
+:toc:
+:icons: font
+:source-highlighter: prettify
+:project_id: java-sdk-repository
+This guide walks you through the process of using the Couchbase SDK repository abstraction to store a Customer document in Couchbase.
+:imagesdir: images
+
+== What you'll build
+
+You will store a `Customer` link:/understanding/POJO[POJOs] in a Couchbase database using a repository abstraction.
+
+
+== What you'll need
+
+* 15-30 minutes
+* A Java code editor with java 1.8 
+* Maven
+* link:http://www.couchbase.com/nosql-databases/downloads[Couchbase Server 4.5+] (follow the instructions to install Couchbase and create a bucket - this guide assumes you will have it running locally)
+
+== Setup
+
+=== Install and launch Couchbase
+With your project set up, you can install and launch Couchbase.
+    
+For whatever operating system you are using, instructions and downloads can be found at  http://developer.couchbase.com/documentation/server/4.0/install/install-intro.html.
+
+After you install Couchbase, launch it. You should see a webpage opening in your default browser allowing you to setup Couchbase
+
+
+=== Dependencies
+
+The following code will rely on the Couchbase Java SDK so make sure you add the correct dependency:
+
+        <dependencies>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>java-client</artifactId>
+                <version>2.2.5</version>
+            </dependency>
+        </dependencies>
+    
+== Code
+
+=== Define a simple entity
+In this example, you store `Customer` objects.
+
+`src/main/java/hello/Customer.java`
+[source,java]
+----
+include::complete/src/main/java/hello/Customer.java[]
+----
+
+Here you have a `Customer` class with three attributes, `username`, `firstName`, and `lastName`. You also have a single constructor to populate the entities when creating a new instance.
+
+NOTE: In this guide, the typical getters and setters have been left out for brevity.
+
+`username` bears the @Id annotation. The field annotated with @Id will be used as Key of your document. 
+
+The other two properties, `firstName` and `lastName`, are left unannotated. It is assumed that they'll be mapped to fields that share the same name as the properties themselves.
+
+The convenient `toString()` method will print out the details about a customer.
+
+
+=== Create an Application class
+Here you create an Application class with all the components.
+
+`src/main/java/hello/Application.java`
+[source,java]
+----
+include::complete/src/main/java/hello/Application.java[]
+----
+
+The `main()` method starts by intializing a connection to the cluster by calling `CouchbaseCluster.create()`. By default this method will attempt a connection to a cluster on the same machine, which is to say with 127.0.0.1 as IP.
+
+Then use the `openBucket` method. By default it opens the bucket named default. A bucket is where you store k/v pairs in Couchbase.
+
+Since the goal of this project is to store a Customer entity, you need to use a repository. A Repository can be opened easily by calling the `bucket.repostory()` method. Then you can create the Customer entity to be stored.
+
+This entity must be wrapped in an `EntityDocument<Customer>` class using `EntityDocument.create(content)`. The next step is to insert the document using the repository with `repository.upsert(document)`.
+
+== Run
+
+To test this worked, fetch the document again using `repository.get("asmith")` and print the result. Once you run the application you should see something like this:
+....
+Jun 01, 2016 11:23:37 AM com.couchbase.client.core.CouchbaseCore <init>
+INFO: CouchbaseEnvironment: {sslEnabled=false, sslKeystoreFile='null', sslKeystorePassword='null', queryEnabled=false, queryPort=8093, bootstrapHttpEnabled=true, bootstrapCarrierEnabled=true, bootstrapHttpDirectPort=8091, bootstrapHttpSslPort=18091, bootstrapCarrierDirectPort=11210, bootstrapCarrierSslPort=11207, ioPoolSize=8, computationPoolSize=8, responseBufferSize=16384, requestBufferSize=16384, kvServiceEndpoints=1, viewServiceEndpoints=1, queryServiceEndpoints=1, searchServiceEndpoints=1, ioPool=NioEventLoopGroup, coreScheduler=CoreScheduler, eventBus=DefaultEventBus, packageNameAndVersion=couchbase-jvm-core/1.2.5 (git: 1.2.5), dcpEnabled=false, retryStrategy=BestEffort, maxRequestLifetime=75000, retryDelay=ExponentialDelay{growBy 1.0 MICROSECONDS, powers of 2; lower=100, upper=100000}, reconnectDelay=ExponentialDelay{growBy 1.0 MILLISECONDS, powers of 2; lower=32, upper=4096}, observeIntervalDelay=ExponentialDelay{growBy 1.0 MICROSECONDS, powers of 2; lower=10, upper=100000}, keepAliveInterval=30000, autoreleaseAfter=2000, bufferPoolingEnabled=true, tcpNodelayEnabled=true, mutationTokensEnabled=false, socketConnectTimeout=1000, dcpConnectionBufferSize=20971520, dcpConnectionBufferAckThreshold=0.2, queryTimeout=75000, viewTimeout=75000, kvTimeout=2500, connectTimeout=5000, disconnectTimeout=25000, dnsSrvEnabled=false}
+Jun 01, 2016 11:23:38 AM com.couchbase.client.core.node.CouchbaseNode signalConnected
+INFO: Connected to Node localhost
+Jun 01, 2016 11:23:38 AM com.couchbase.client.core.config.DefaultConfigurationProvider$8 call
+INFO: Opened bucket default
+Customer[username=asmith, firstName='Alice', lastName='Smith']
+....
+
+The most important line is the last one showing the Customer entity has been stored successfuly. The previous line are logs showing the Couchbase SDK connection to the cluster.
+
+== Summary
+Congratulations! You set up a Couchbase server and wrote a simple application that uses a repository to save objects to and fetch them from a database -- all without writing a concrete repository implementation.
+
